@@ -1,31 +1,13 @@
 "use client"
+import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
-import styles from './page.module.css'
-import { Button, Typography, LinearProgress, Box, Rating } from '@mui/material'
-import { ChangeEvent, ChangeEventHandler, useEffect, useMemo, useRef, useState } from 'react'
+import {  PDFDownloadLink,  } from '@react-pdf/renderer';
+import { Button, Typography, Box, Rating } from '@mui/material'
+
 import LinearProgressWithLabel from './components/LinearProgressWithLabel';
-import StarIcon from '@mui/icons-material/StarBorder';
-import { usePDF } from 'react-to-pdf'
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Image as PdfImage } from '@react-pdf/renderer';
-const styles1 = StyleSheet.create({
-  page: {
-    flexDirection: 'row',
-    backgroundColor: '#E4E4E4'
-  },
-  section: {
-    margin: 10,
-    padding: 10,
-    flexGrow: 1
-  }
-});
-// const MyDocument = ({src: string}) => (
-//   <Document>
-//     <Page size="A4" style={styles1.page}>
-//       <PdfImage src={src}/>
-//       <Text>Test</Text>
-//     </Page>
-//   </Document>
-// );
+import PDFDocument from './components/PdfDocument'
+
+import styles from './page.module.css'
 
 type AppState = 'initial' | 'loading' | 'result';
 
@@ -52,11 +34,10 @@ export default function Home() {
     }, 800);
   }
   const [rating, setRating] = useState(2.5);
-  const { toPDF, targetRef } = usePDF({filename: 'page.pdf'});
   return (
     <main className={styles.main}>
       <Typography variant='h3' align='center'>
-        Система розпізнавання марок автомобілів за зображенням
+       Recognizing car brands by image
       </Typography>
       <input
         hidden
@@ -71,7 +52,7 @@ export default function Home() {
           variant="contained"
           onClick={() => inputRef.current?.click()}
         >
-          Обрати зображення
+          Choose Image
         </Button>
       }
       {appState === 'loading' && imageSrc && <>
@@ -86,7 +67,7 @@ export default function Home() {
           <LinearProgressWithLabel value={progress} />
         </Box>
       </>}
-      {appState === 'result' && imageSrc && <div ref={targetRef}>
+      {appState === 'result' && imageSrc && <>
         <Image
           src={imageSrc}
           alt='Your image'
@@ -95,34 +76,39 @@ export default function Home() {
           style={{objectFit: "contain"}}
         />
         <Typography variant="h4" color="text.secondary">
-          З вірогідністю 99% це Mersedes
+          With a probability of 99% it is a Mercedes
         </Typography>
-        <Typography component="legend">Оцініть результат розпізнавання</Typography>
-        <Rating
-          name="simple-controlled"
-          value={rating}
-          onChange={(event, newValue) => {
-            newValue && setRating(newValue);
-          }}
-        />
-        <Button 
-          variant="contained"
-          onClick={() => inputRef.current?.click()}
-        >
-          Спробувати знову
-        </Button>
-        <Button 
-          variant="contained"
-          // onClick={() => renderToStream(<MyDocument />)}
-        >
-          Завантажити
-        </Button>
-      </div>}
-      {/* <PDFDownloadLink document={<MyDocument src={imageSrc || ''}/>} fileName="somename.pdf">
-      {({ blob, url, loading, error }) =>
-        loading ? 'Loading document...' : 'Download now!'
-      }
-    </PDFDownloadLink> */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Typography component="legend">Rate the recognition result</Typography>
+          <Rating
+            name="simple-controlled"
+            value={rating}
+            onChange={(event, newValue) => {
+              newValue && setRating(newValue);
+            }}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant="contained"
+            onClick={() => inputRef.current?.click()}
+          >
+            Try again
+          </Button>
+          <Button 
+            variant="contained"
+          >
+            <PDFDownloadLink 
+              document={<PDFDocument imageSrc={imageSrc} text='With a probability of 99% it is a Mercedes'/>} 
+              fileName="result.pdf"
+            >
+              {({ blob, url, loading, error }) =>
+                loading ? 'Loading document...' : 'Download result'
+              }
+            </PDFDownloadLink>
+          </Button>
+        </Box>
+      </>}
     </main>
   )
 }
