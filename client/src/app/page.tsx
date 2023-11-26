@@ -1,5 +1,5 @@
 "use client"
-import { ChangeEvent, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import {  PDFDownloadLink,  } from '@react-pdf/renderer';
 import { Button, Typography, Box, Rating } from '@mui/material'
@@ -8,6 +8,7 @@ import LinearProgressWithLabel from './components/LinearProgressWithLabel';
 import PDFDocument from './components/PdfDocument'
 
 import styles from './page.module.css'
+import axios from 'axios';
 
 type AppState = 'initial' | 'loading' | 'result';
 
@@ -17,11 +18,26 @@ export default function Home() {
   const imageSrc = useMemo(() => image && URL.createObjectURL(image), [image]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
+  const [userRating, setUserRating] = useState(0);
   const handleInput = ({target: {files}}: ChangeEvent<HTMLInputElement>) => {
     const file = files?.[0];
     if(!file) return;
     setImage(file);
     setAppState('loading');
+    axios.postForm('http://localhost:5000/result', {
+      car_image: file
+    })
+      .then(function (response) {
+        // handle success
+        console.log(response);
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
+      .finally(function () {
+        // always executed
+      });
     const timer = setInterval(() => {
       setProgress((prevProgress) => {
         if(prevProgress >= 100) {
@@ -33,12 +49,35 @@ export default function Home() {
       });
     }, 800);
   }
-  const [rating, setRating] = useState(2.5);
+  const [rating, setRating] = useState(0);
+  console.log(rating);
+  useEffect(() => {
+    axios.get('http://localhost:5000/rate')
+      .then(function (response) {
+        // handle success
+        setRating(response.data.average);
+      })
+      .catch(function (error) {
+        // handle error
+        console.log(error);
+      })
+      .finally(function () {
+        // always executed
+      });
+  }, [])
   return (
     <main className={styles.main}>
       <Typography variant='h3' align='center'>
        Recognizing car brands by image
       </Typography>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Typography component="legend">Our Average rating is</Typography>
+        <Rating
+          readOnly
+          value={rating}
+        />
+        <Typography component="legend">{rating}</Typography>
+      </Box>
       <input
         hidden
         type='file'
@@ -81,10 +120,24 @@ export default function Home() {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Typography component="legend">Rate the recognition result</Typography>
           <Rating
-            name="simple-controlled"
-            value={rating}
+            value={userRating}
             onChange={(event, newValue) => {
-              newValue && setRating(newValue);
+              if(!newValue) return;
+              setUserRating(newValue);
+              axios.post('http://localhost:5000/rate', {
+                rating: newValue
+              })
+                .then(function (response) {
+                  // handle success
+                  setRating(response.data.average);
+                })
+                .catch(function (error) {
+                  // handle error
+                  console.log(error);
+                })
+                .finally(function () {
+                  // always executed
+                });
             }}
           />
         </Box>

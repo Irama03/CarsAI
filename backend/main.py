@@ -1,9 +1,11 @@
 from flask import Flask
 from flask import request
+from flask_cors import CORS
 
 avg_score_file_path = 'average_score.txt'
 
 app = Flask(__name__)
+cors = CORS(app)
 
 def parse_file():
     with open(avg_score_file_path, 'r') as file:
