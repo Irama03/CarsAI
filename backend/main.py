@@ -2,6 +2,29 @@ from flask import Flask
 from flask import request
 from flask_cors import CORS
 
+from dataset import torch, os, transforms, np, get_class, num_classes, m, s
+
+from torch.autograd import Variable
+from torchvision.models import resnet
+
+from PIL import Image
+
+from config import *
+
+classes = {"num_classes": len(num_classes)}
+
+mean=m
+std_dev=s
+
+transform = transforms.Compose([transforms.Resize((224,224)),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean, std_dev)])
+
+resnet152_model = resnet.resnet152(pretrained=False, **classes)
+model_name="resnet152"
+model=resnet152_model
+
+
 avg_score_file_path = 'average_score.txt'
 
 app = Flask(__name__)
@@ -40,9 +63,23 @@ def rate():
 
 @app.route("/result", methods=["POST"])
 def getResult():
-    car_image = request.files['car_image']
-    return getCarMarkFromImage(car_image)
+    # car_image = Image.open(request.files['car_image'].stream).convert("RGB")
+    request.files['car_image'].save(os.path.join(app.root_path, 'file.jpg'))
+    return getCarMarkFromImage()
 
 
-def getCarMarkFromImage(car_image):
-    return { "mark": "BMW" }
+def getCarMarkFromImage():
+    print(str(RESULTS_PATH) + "/" + str(model_name) + "/" + str(model_name) + ".pt")
+
+    model.load_state_dict(torch.load(str(RESULTS_PATH) + "/" + str(model_name) + "/" + str(model_name) + ".pt"))
+
+    im = Image.open(os.path.join(app.root_path, 'file.jpg')).convert("RGB")
+    im = transform(im)
+    x = Variable(im.unsqueeze(0))
+
+    pred = model(x).data.numpy().copy()
+
+    idx_max_pred = np.argmax(pred)
+    idx_classes = idx_max_pred % classes["num_classes"]
+    
+    return { "mark": get_class(idx_classes) }
