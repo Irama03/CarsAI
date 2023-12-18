@@ -20,6 +20,7 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [userRating, setUserRating] = useState(0);
   const [mark, setMark] = useState(null);
+  const [probability, setProbability] = useState(null);
   const handleInput = ({target: {files}}: ChangeEvent<HTMLInputElement>) => {
     const file = files?.[0];
     if(!file) return;
@@ -29,9 +30,8 @@ export default function Home() {
       car_image: file
     })
       .then(function (response) {
-        // handle success
-        console.log(response);
         setMark(response.data.mark);
+        setProbability(response.data.probability)
       })
       .catch(function (error) {
         // handle error
@@ -117,7 +117,7 @@ export default function Home() {
           style={{objectFit: "contain"}}
         />
         <Typography variant="h4" color="text.secondary">
-          With a probability of 99% it is {mark}
+          With a probability of {probability}% it is {mark}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Typography component="legend">Rate the recognition result</Typography>
@@ -154,7 +154,7 @@ export default function Home() {
             variant="contained"
           >
             <PDFDownloadLink 
-              document={<PDFDocument imageSrc={imageSrc} text={`With a probability of 99% it is ${mark}`}/>} 
+              document={<PDFDocument imageSrc={imageSrc} text={`With a probability of ${probability}% it is ${mark}`}/>} 
               fileName="result.pdf"
             >
               {({ blob, url, loading, error }) =>
